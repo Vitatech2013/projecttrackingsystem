@@ -1,0 +1,195 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+<style>
+    .form-control {
+        border: 1px solid black;
+        border-radius: 10px;
+    }
+</style>
+<html>
+
+<body onload="getCount()">
+</body>
+
+</html>
+<br>
+<form onsubmit="Register()">
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-3"><label>Employee Id</label><input type="text" class="form-control" name="empid" id="empid"
+                readonly="true"></div>
+        <div class="col-md-3"><label>Role</label><select class="form-control" name="role" id="role"
+                onchange="getSuperiors()" required>
+                <option value="" disabled selected>--Select--</option>
+                <option value="Project Manager">Project Manager</option>
+                <option value="Team Leader">Team Leader</option>
+                <option value="Developer">Developer</option>
+            </select>
+        </div>
+        <div class="col-md-3"><label>Superior</label><select class="form-control" name="sup" id="sup" required>
+                <option value="" disabled selected>--Select--</option>
+            </select>
+        </div>
+        <div class="col-md-1"></div>
+    </div><br>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-3"><label>First Name</label><input type="text" class="form-control" name="fname" id="fname"
+                placeholder="First Name" required></div>
+        <div class="col-md-3"><label>Last Name</label><input type="text" class="form-control" name="lname" id="lname"
+                placeholder="Last Name" required></div>
+        <div class="col-md-3"><label>User Name</label><input type="text" class="form-control" name="uname" id="uname"
+                placeholder="User Name" required></div>
+        <div class="col-md-1"></div>
+    </div><br>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-3"><label>Phone Number</label><input type="text" class="form-control" name="phone" id="phone"
+                placeholder="Phone Number"max="10" pattern="[6-9]{1}[0-9]{9}" required></div>
+        <div class="col-md-3"><label>Email Id</label><input type="email" class="form-control" name="email" id="email"
+                placeholder="Email Id" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" required></div>
+        <div class="col-md-3"><label>Qualification</label><select class="form-control" name="qual" id="qual" required>
+                <option value="" selected>--Select--</option>
+                <option value="Degree">Degree</option>
+                <option value="B.Tech">B.Tech</option>
+                <option value="M.Tech">M.Tech</option>
+                <option value="MBA">MBA</option>
+                <option value="MCA">MCA</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+        <div class="col-md-1"></div>
+    </div><br>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-3"><label>Address</label><textarea class="form-control" name="add" id="add" rows="4"
+                placeholder="Address" required></textarea></div>
+        <div class="col-md-7"></div>
+    </div><br>
+    <div class="row">
+        <div class="col-md-6"></div>
+        <div class="col-md-3"><button type="submit" class="btn btn-info">Register</button></div>
+        <div class="col-md-3"></div>
+    </div>
+</form>
+<script>
+    function performAjax(httpMethod, url, params) {
+        const myPromise = new Promise((resolve, reject) => {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    resolve(this.responseText);
+                }
+                if (this.status == 500) {
+                    reject({ error: true, message: "ServerError" });
+                }
+                if (this.status == 404) {
+                    reject({ error: true, message: "Resource not found" });
+                }
+            };
+            xhttp.open(httpMethod, url, true);
+            xhttp.setRequestHeader("Content-Type", "application/json");
+            params ? xhttp.send(params) : xhttp.send();
+        });
+        return myPromise;
+    }
+
+    function getCount() {
+        let empid = "";
+        const getCountPromise = performAjax(
+            "GET",
+            `http://localhost:1234/admin/count`
+        );
+        getCountPromise
+            .then((count) => {
+                var a = parseInt(count.substring(1, count.length - 1)) + 1;
+                if (a >= 1 && a <= 9) {
+                    empid = "000" + a;
+                }
+                else if (a >= 10 && a <= 99) {
+                    empid = "00" + a;
+                }
+                else if (a >= 100 && a <= 999) {
+                    empid = "0" + a;
+                }
+                else if (a >= 1000 && a <= 9999) {
+                    empid = "" + a;
+                }
+
+                document.getElementById("empid").value = empid;
+            })
+            .catch(err => {
+                alert(err.message);
+            })
+    }
+
+    function getSuperiors() {
+        let selection = document.getElementById("role").value;
+        document.getElementById('sup').options.length = 1;
+        if (selection == "Team Leader") {
+            selection = "Project Manager";
+        }
+        else if (selection == "Developer") {
+            selection = "Team Leader";
+        }
+        else {
+            selection = "Admin";
+        }
+
+        if (selection == "Admin") {
+            let superior = document.getElementById("sup");
+            let option = document.createElement("OPTION");
+            option.innerHTML = "Admin";
+            option.value = "Admin";
+            superior.options.add(option);
+        }
+        else {
+            const getUsersPromise = performAjax("GET", `http://localhost:1234/admin/superiors?role=${selection}`);
+            getUsersPromise
+                .then((response) => {
+                    const data = JSON.parse(response);
+                    let superior = document.getElementById("sup");
+                    for (let i = 0; i < data.length; i++) {
+                        let option = document.createElement("OPTION");
+                        option.innerHTML = data[i].username;
+                        option.value = data[i].username;
+                        superior.options.add(option);
+                    }
+                })
+                .catch(err => {
+                    alert(err.message);
+                })
+        }
+    }
+
+    function Register() {
+        event.preventDefault();
+        const password = Math.floor((Math.random() * 1000000) + 1);
+        const empid = document.getElementById("empid").value;
+        const role = document.getElementById("role").value;
+        const superior = document.getElementById('sup').value;
+        const firstname = document.getElementById("fname").value;
+        const lastname = document.getElementById("lname").value;
+        const username = document.getElementById("uname").value;
+        const mobileno = document.getElementById("phone").value;
+        const emailid = document.getElementById('email').value;
+        const qualification = document.getElementById("qual").value;
+        const address = document.getElementById("add").value;
+
+        const getRegPromise = performAjax(
+            "POST",
+            `http://localhost:1234/admin/registration`,
+            JSON.stringify({ empid, role, superior, firstname, lastname, username, password, mobileno, emailid, qualification, address })
+        );
+        getRegPromise
+            .then((response) => {
+                alert('Employee Registered Successfully');
+            })
+            .catch(err => {
+                alert(err.message);
+            })
+
+    }
+
+</script>

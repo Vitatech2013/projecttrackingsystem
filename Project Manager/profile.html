@@ -1,0 +1,83 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+<html>
+    <body onload="Profile()">        
+    </body>
+</html>
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-3"><label>Employee Id</label><input type="text" class="form-control" name="empid" id="empid" readonly="true"></div>
+    <div class="col-md-3"><label>Role</label><input type="text" class="form-control" name="role" id="role"></div>
+    <div class="col-md-3"><label>Superior</label><input type="text" class="form-control" name="sup" id="sup"></div>
+    <div class="col-md-1"></div>
+</div><br>
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-3"><label>First Name</label><input type="text" class="form-control" name="fname" id="fname" placeholder="First Name"></div>
+    <div class="col-md-3"><label>Last Name</label><input type="text" class="form-control" name="lname" id="lname" placeholder="Last Name"></div>
+    <div class="col-md-3"><label>User Name</label><input type="text" class="form-control" name="uname" id="uname" placeholder="User Name"></div>
+    <div class="col-md-1"></div>
+</div><br>
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-3"><label>Phone Number</label><input type="text" class="form-control" name="phone" id="phone" placeholder="Phone Number"></div>
+    <div class="col-md-3"><label>Email Id</label><input type="email" class="form-control" name="email" id="email" placeholder="Email Id"></div>
+    <div class="col-md-3"><label>Qualification</label><input type="text" class="form-control" name="qual" id="qual"></div>
+    <div class="col-md-1"></div>
+</div><br>
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-3"><label>Address</label><textarea class="form-control" name="add" id="add" rows="4" placeholder="Address"></textarea></div>
+    <div class="col-md-7"></div>
+</div><br>
+<br>
+<script>
+    const id=sessionStorage.getItem("_id");
+    function performAjax(httpMethod, url, params) {
+        const myPromise = new Promise((resolve, reject) => {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    resolve(this.responseText);
+                }
+                if (this.status == 500) {
+                    reject({ error: true, message: "ServerError" });
+                }
+                if (this.status == 404) {
+                    reject({ error: true, message: "Resource not found" });
+                }
+            };
+            xhttp.open(httpMethod, url, true);
+            xhttp.setRequestHeader("Content-Type", "application/json");
+            params ? xhttp.send(params) : xhttp.send();
+        });
+        return myPromise;
+    }
+
+    function Profile() {
+        const getProfilePromise = performAjax("GET", `http://localhost:1234/ProjectManager/profile?_id=${id}`);
+        getProfilePromise
+        .then((data) => {
+            const profile = [JSON.parse(data)].map(record => {
+                return record;
+            });
+            profile.map(rec => {
+                document.getElementById("empid").value = rec.empid;  
+                document.getElementById("role").value = rec.role; 
+                document.getElementById("sup").value = rec.superior; 
+                document.getElementById("fname").value = rec.firstname;
+                document.getElementById("lname").value = rec.lastname;
+                document.getElementById("uname").value = rec.username;
+                document.getElementById("phone").value = rec.mobileno; 
+                document.getElementById("email").value = rec.emailid;  
+                document.getElementById("qual").value = rec.qualification;
+                document.getElementById("add").value = rec.address;
+            });
+        })
+        .catch(err => {
+            alert(err.message);
+        })
+    }
+
+</script>

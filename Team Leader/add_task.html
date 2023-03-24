@@ -1,0 +1,180 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+<style>
+    .form-control {
+        border: 1px solid black;
+        border-radius: 10px;
+    }
+</style>
+<html>
+
+<body onload="getProjects()">
+</body>
+
+</html>
+<br>
+<form onsubmit="Add()">
+    <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-4"><label>Project Name</label><select class="form-control" name="project" id="project"
+                onchange="getModules()" required>
+                <option value="" disabled selected>--Select--</option>
+            </select>
+        </div>
+        <div class="col-md-4"></div>
+    </div><br>
+    <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-4"><label>Module Name</label><select class="form-control" name="module" id="module" required>
+                <option value="" disabled selected>--Select--</option>
+            </select>
+        </div>
+    </div><br>
+    <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-4"><label for="">Developer</label><select class="form-control" name="dev" id="dev" required>
+                <option value="" disabled selected>--Select--</option>
+            </select>
+        </div>
+        <div class="col-md-4"></div>
+    </div><br>
+    <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-4"><label>Task</label><input type="text" name="task" id="task" class="form-control"
+                placeholder="Task Details" required></textarea></div>
+        <div class="col-md-4"></div>
+    </div><br>
+    <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-4"><label>Attachment</label><input type="file" name="file" id="file" class="form-control"
+                required>
+        </div>
+        <div class="col-md-4"></div>
+    </div><br>
+    <div class="row">
+        <div class="col-md-5"></div>
+        <div class="col-md-2"><button type="submit" class="btn btn-info">Add Task</button></div>
+        <div class="col-md-5"></div>
+    </div>
+</form>
+<script>
+    const tlid = sessionStorage.getItem("tlid");
+    const name = sessionStorage.getItem("username");
+    function performAjax(httpMethod, url, params) {
+        const myPromise = new Promise((resolve, reject) => {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    resolve(this.responseText);
+                }
+                if (this.status == 500) {
+                    reject({ error: true, message: "ServerError" });
+                }
+                if (this.status == 404) {
+                    reject({ error: true, message: "Resource not found" });
+                }
+            };
+            xhttp.open(httpMethod, url, true);
+            xhttp.setRequestHeader("Content-Type", "application/json");
+            params ? xhttp.send(params) : xhttp.send();
+        });
+        return myPromise;
+    }
+
+    function getProjects() {
+        const getProjectsPromise = performAjax("GET", `http://localhost:1234/TeamLeader/viewprojects?teamleader=${tlid}`);
+        getProjectsPromise
+            .then((response) => {
+                const data = JSON.parse(response);
+                let project = document.getElementById("project");
+                for (let i = 0; i < data.length; i++) {
+                    let option = document.createElement("OPTION");
+                    option.innerHTML = data[i].project;
+                    option.value = data[i].project;
+                    project.options.add(option);
+                }
+            })
+            .catch(err => {
+                alert(err.message);
+            })
+    }
+
+    function getModules() {
+        const proj = document.getElementById('project').value;
+        const getModulesPromise = performAjax("GET", `http://localhost:1234/TeamLeader/getmodules?teamleader=${tlid}&project=${proj}`);
+        getModulesPromise
+            .then((response) => {
+                const data = JSON.parse(response);
+                let module = document.getElementById("module");
+                for (let i = 0; i < data.length; i++) {
+                    let option = document.createElement("OPTION");
+                    option.innerHTML = data[i].module;
+                    option.value = data[i].module;
+                    module.options.add(option);
+                }
+                getDevelopers();
+            })
+            .catch(err => {
+                alert(err.message);
+            })
+    }
+
+    function getDevelopers() {
+        const getUsersPromise = performAjax("GET", `http://localhost:1234/TeamLeader/getemps?superior=${name}`);
+        getUsersPromise
+            .then((response) => {
+                const data = JSON.parse(response);
+                let dev = document.getElementById("dev");
+                for (let i = 0; i < data.length; i++) {
+                    let option = document.createElement("OPTION");
+                    option.innerHTML = data[i].username;
+                    option.value = data[i].username + '%' + data[i].empid;
+                    dev.options.add(option);
+                }
+            })
+            .catch(err => {
+                alert(err.message);
+            })
+    }
+
+    function Add() {
+        event.preventDefault();
+        var currentDate = new Date()
+        var day = currentDate.getDate()
+        var month = currentDate.getMonth() + 1
+        var year = currentDate.getFullYear()
+        const date = day + "-" + month + "-" + year;
+        const status = "New Task";
+        const data = document.getElementById("dev").value;
+        const str = data.split("%");
+        const developer = str[1];
+
+        const project = document.getElementById('project').value;
+        const module = document.getElementById("module").value;
+        const task = document.getElementById("task").value;
+        const file = document.getElementById("file").files;
+
+        if (file.length > 0) {
+            var fileToLoad = file[0];
+            var fileReader = new FileReader();
+            fileReader.onload = function (fileLoadedEvent) {
+                const filepath = fileLoadedEvent.target.result;
+                const getAddPromise = performAjax(
+                    "POST",
+                    `http://localhost:1234/TeamLeader/addtask`,
+                    JSON.stringify({ teamleader: tlid, project, module, task, developer, date, file: filepath, status })
+                );
+                getAddPromise
+                    .then((response) => {
+                        alert('Task Details Successfully');
+                    })
+                    .catch(err => {
+                        alert(err.message);
+                    })
+            }
+            fileReader.readAsDataURL(fileToLoad);
+        }
+    }
+
+</script>

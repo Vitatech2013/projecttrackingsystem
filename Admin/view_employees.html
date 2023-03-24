@@ -1,0 +1,318 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<html>
+<style>
+    .tablecss {
+        font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .tablecss td,
+    .tablecss th {
+        border: 1px solid #ddd;
+        padding: 8px;
+    }
+
+    .tablecss tr:nth-child(odd) {
+        background-color: #f2f2f2;
+    }
+
+    .tablecss tr:hover {
+        background-color: #ddd;
+    }
+
+    .tablecss th {
+        padding-top: 12px;
+        padding-bottom: 12px;
+        text-align: center;
+        background-color: lavender;
+        color: black;
+        font-weight: bold;
+    }
+</style>
+<style>
+    .form-control {
+        border: 1px solid black;
+        border-radius: 10px;
+    }
+</style>
+
+<body onload="loadData()">
+    <center>
+        <h3>Employee Details</h3>
+        <table id="emp" class="tablecss" style="width: 100%;"></table>
+    </center>
+    <div class="modal fade" id="myModal" role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Employee Details</h4>
+                </div>
+                <div class="modal-body">
+                    <form onsubmit="Update()">
+                        <div class="row">
+                            <div class="col-md-4"><label>Employee Id</label><input type="text" class="form-control"
+                                    name="empid" id="empid" readonly="true"></div>
+                            <div class="col-md-4"><label>Role</label><select class="form-control" name="role" id="role"
+                                    onchange="getSuperiorsss()" required>
+                                    <option value="" disabled selected>--Select--</option>
+                                    <option value="Project Manager">Project Manager</option>
+                                    <option value="Team Leader">Team Leader</option>
+                                    <option value="Developer">Developer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4"><label>Superior</label><select class="form-control" name="sup"
+                                    id="sup" required>
+                                    <option value="" disabled selected>--Select--</option>
+                                </select>
+                            </div>
+                        </div><br>
+                        <div class="row">
+                            <div class="col-md-4"><label>First Name</label><input type="text" class="form-control"
+                                    name="fname" id="fname" placeholder="First Name" required></div>
+                            <div class="col-md-4"><label>Last Name</label><input type="text" class="form-control"
+                                    name="lname" id="lname" placeholder="Last Name" required></div>
+                            <div class="col-md-4"><label>User Name</label><input type="text" class="form-control"
+                                    name="uname" id="uname" placeholder="User Name" required></div>
+                        </div><br>
+                        <div class="row">
+                            <div class="col-md-4"><label>Phone Number</label><input type="text" class="form-control"
+                                    name="phone" id="phone" placeholder="Phone Number" max="10"pattern="[6-9]{1}[0-9]{9}"
+                                    required></div>
+                            <div class="col-md-4"><label>Email Id</label><input type="email" class="form-control"
+                                    name="email" id="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                                    placeholder="Email Id" required></div>
+                            <div class="col-md-4"><label>Qualification</label><select class="form-control" name="qual"
+                                    id="qual" required>
+                                    <option value="" selected>--Select--</option>
+                                    <option value="Degree">Degree</option>
+                                    <option value="B.Tech">B.Tech</option>
+                                    <option value="M.Tech">M.Tech</option>
+                                    <option value="MBA">MBA</option>
+                                    <option value="MCA">MCA</option>
+                                    <option value="Others">Others</option>
+                                </select>
+                            </div>
+                        </div><br>
+                        <div class="row">
+                            <div class="col-md-4"><label>Address</label><textarea class="form-control" name="add"
+                                    id="add" rows="4" placeholder="Address"required></textarea></div>
+                            <div class="col-md-4"><input type="hidden" name="id" id="id" class="form-control" >
+                            </div>
+                            <div class="col-md-4"><br><br>
+                                <button type="submit" id="submit" class="btn btn-info"
+                                    data-dismiss="modal">Update</button>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+
+<script>
+    function performAjax(httpMethod, url, params) {
+        const myPromise = new Promise((resolve, reject) => {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    resolve(this.responseText);
+                }
+                if (this.status == 500) {
+                    reject({ error: true, message: "ServerError" });
+                }
+                if (this.status == 404) {
+                    reject({ error: true, message: "Resource not found" });
+                }
+            };
+            xhttp.open(httpMethod, url, true);
+            xhttp.setRequestHeader("Content-Type", "application/json");
+            params ? xhttp.send(params) : xhttp.send();
+        });
+        return myPromise;
+    }
+
+    function loadData() {
+        const getEmpPromise = performAjax("GET", "http://localhost:1234/admin/view");
+        getEmpPromise
+            .then((response) => {
+                showEmpDetails(response);
+            })
+            .catch(err => {
+                alert(err.message);
+            })
+    }
+
+    function showEmpDetails(data) {
+        const records = JSON.parse(data);
+        let tableRow = '';
+        const tableHeader = `<tr style="background: lavender;"><th>S.No.</th><th>Emp&nbsp;Id</th><th>Role</th><th>Superior</th><th>Full Name</th><th>User&nbsp;Name</th><th>Mobile&nbsp;Number</th><th>Email&nbsp;Id</th><th>Qualification</th><th>address</th><th>Action</th></tr>`;
+        if (records.length > 0) {
+            tableRow = records.map((rec, index) => {
+                let editButton = `<a id="${rec._id}" class="fa fa-pencil" style="color:blue; font-size:22px;" data-toggle="modal" data-target="#myModal" onclick="editRecord(event)"></a>`;
+                let deleteButton = `<a id="${rec._id}" class="fa fa-trash" style="color:blue; font-size:22px;" onclick="deleteRecord(event)"></a>`;
+                return `<tr><td align="right">${index + 1}</td><td>${rec.empid}</td><td>${rec.role}</td><td>${rec.superior}</td><td>${rec.firstname} ${rec.lastname}</td><td>${rec.username}</td><td>${rec.mobileno}</td><td>${rec.emailid}</td><td>${rec.qualification}</td><td>${rec.address}</td><td align="center">${editButton}&nbsp;&nbsp;${deleteButton}</td></tr>`;
+            });
+            document.getElementById("emp").innerHTML = `${tableHeader}${tableRow.join('')}`;
+        }
+        else {
+            tableRow = `<tr><td colspan="12" align="center">No Data Found</td></tr>`;
+            document.getElementById("emp").innerHTML = `${tableHeader}${tableRow}`;
+        }
+    }
+
+    function getSuperiors(selection, supe) {
+        document.getElementById('sup').options.length = 1;
+        if (selection == "Team Leader") {
+            selection = "Project Manager";
+        }
+        else if (selection == "Developer") {
+            selection = "Team Leader";
+        }
+        else {
+            selection = "Admin";
+        }
+
+        if (selection == "Admin") {
+            let superior = document.getElementById("sup");
+            let option = document.createElement("OPTION");
+            option.innerHTML = "Admin";
+            option.value = "Admin";
+            superior.options.add(option);
+        }
+        else {
+            const getUsersPromise = performAjax("GET", `http://localhost:1234/admin/superiors?role=${selection}`);
+            getUsersPromise
+                .then((response) => {
+                    const data = JSON.parse(response);
+                    let superior = document.getElementById("sup");
+                    for (let i = 0; i < data.length; i++) {
+                        let option = document.createElement("OPTION");
+                        option.innerHTML = data[i].username;
+                        option.value = data[i].username;
+                        superior.options.add(option);
+                    }
+                    document.getElementById("sup").value = supe;
+                })
+                .catch(err => {
+                    alert(err.message);
+                })
+        }
+    }
+
+    function editRecord(event) {
+        event.preventDefault();
+        const getEditRecordPromise = performAjax("GET", `http://localhost:1234/admin/get/${event.target.id}`);
+        getEditRecordPromise
+            .then((editRecord) => {
+                const data = JSON.parse(editRecord);
+                const record = [data].map(record => {
+                    return record;
+                });
+                record.map(rec => {
+                    getSuperiors(rec.role, rec.superior);
+                    document.getElementById("empid").value = rec.empid;
+                    document.getElementById("role").value = rec.role;
+                    document.getElementById("fname").value = rec.firstname;
+                    document.getElementById("lname").value = rec.lastname;
+                    document.getElementById("uname").value = rec.username;
+                    document.getElementById("phone").value = rec.mobileno;
+                    document.getElementById("email").value = rec.emailid;
+                    document.getElementById("qual").value = rec.qualification;
+                    document.getElementById("add").value = rec.address;
+                    document.getElementById("id").value = event.target.id;
+                })
+            })
+            .catch(err => {
+                alert(err.message);
+            })
+    }
+
+    function getSuperiorsss() {
+        let selection = document.getElementById("role").value;
+        document.getElementById('sup').options.length = 1;
+        if (selection == "Team Leader") {
+            selection = "Project Manager";
+        }
+        else if (selection == "Developer") {
+            selection = "Team Leader";
+        }
+        else {
+            selection = "Admin";
+        }
+
+        if (selection == "Admin") {
+            let superior = document.getElementById("sup");
+            let option = document.createElement("OPTION");
+            option.innerHTML = "Admin";
+            option.value = "Admin";
+            superior.options.add(option);
+        }
+        else {
+            const getUsersPromise = performAjax("GET", `http://localhost:1234/admin/superiors?role=${selection}`);
+            getUsersPromise
+                .then((response) => {
+                    const data = JSON.parse(response);
+                    let superior = document.getElementById("sup");
+                    for (let i = 0; i < data.length; i++) {
+                        let option = document.createElement("OPTION");
+                        option.innerHTML = data[i].username;
+                        option.value = data[i].username;
+                        superior.options.add(option);
+                    }
+                })
+                .catch(err => {
+                    alert(err.message);
+                })
+        }
+    }
+
+    function Update() {
+        const id = document.getElementById("id").value;
+        const empid = document.getElementById("empid").value;
+        const role = document.getElementById("role").value;
+        const superior = document.getElementById('sup').value;
+        const firstname = document.getElementById("fname").value;
+        const lastname = document.getElementById("lname").value;
+        const username = document.getElementById("uname").value;
+        const mobileno = document.getElementById("phone").value;
+        const emailid = document.getElementById('email').value;
+        const qualification = document.getElementById("qual").value;
+        const address = document.getElementById("add").value;
+
+        const getUpdatePromise = performAjax(
+            "PUT",
+            `http://localhost:1234/admin/update/${id}`,
+            JSON.stringify({ empid, role, superior, firstname, lastname, mobileno, emailid, qualification, address })
+        );
+        getUpdatePromise
+            .then((response) => {
+                alert('Employee Details Updated');
+            })
+            .catch(err => {
+                alert(err.message);
+            })
+    }
+
+    function deleteRecord(event) {
+        event.preventDefault();
+        const deletePromise = performAjax('DELETE', `http://localhost:1234/admin/delete/${event.target.id}`);
+        deletePromise
+            .then((response) => {
+                showEmpDetails(response);
+            })
+            .catch(err => {
+                alert(err.message);
+            })
+    }
+
+</script>
